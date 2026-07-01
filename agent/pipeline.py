@@ -1,18 +1,4 @@
-"""
-pipeline.py
------------
-Ana akis: soru -> SQL uret -> DOGRULA (guard) -> calistir -> cevapla.
 
-Iki SQL uretici var:
-1. LLMTranslator  : OpenAI ile gercek text-to-SQL (uretim modu).
-2. RuleTranslator : API anahtari yokken calisan desen tabanli demo modu
-                    (graceful degradation — sistem her kosulda calisir).
-
-Onemli tasarim karari: LLM'in ciktisi ASLA dogrudan calistirilmaz;
-once guard.validate_sql'den gecer. Dogruluk vurgusu ilanin kalbiydi:
-cevap her zaman gercek veriden gelir, sayi uydurulamaz — cunku cevabi
-LLM degil, veritabani verir; LLM yalnizca SORGUYU yazar.
-"""
 
 import logging
 import os
