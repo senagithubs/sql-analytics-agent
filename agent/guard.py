@@ -1,21 +1,4 @@
-"""
-guard.py
---------
-SQL guvenlik katmani. LLM'in urettigi SQL'i calistirmadan ONCE dogrular.
 
-Neden var? Text-to-SQL sistemlerinde en buyuk iki risk:
-1. Guvenlik: LLM (veya kotu niyetli prompt) DELETE/DROP uretebilir.
-2. Dogruluk: LLM var olmayan tablo/kolon uydurabilir (halusinasyon).
-
-Bu katman her iki riski de calistirma ANINDA keser:
-- Sadece tek bir SELECT ifadesine izin verir.
-- Tablo adlarini beyaz listeyle (allowlist) sinirlar.
-- Yikici anahtar kelimeleri (DROP, DELETE, UPDATE...) reddeder.
-- Sonuc boyutunu LIMIT ile sinirlar.
-
-Yani LLM ne kadar yaratici olursa olsun, veritabanina yalnizca
-guvenli, salt-okunur sorgular ulasir.
-"""
 
 import re
 
