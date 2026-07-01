@@ -1,7 +1,4 @@
-"""
-cli.py — interaktif demo.
-Calistir: python cli.py   (once: python data/build_sample_db.py)
-"""
+
 
 import logging
 
