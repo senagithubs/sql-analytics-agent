@@ -1,13 +1,4 @@
-"""
-schema.py
----------
-Veritabani semasini otomatik cikarir (introspection).
 
-Neden? LLM'e "su tablolar ve kolonlar var" bilgisini prompt icinde
-veririz; boylece sorgulari GERCEK semaya dayanir, uydurmaya degil.
-Sema koda gomulmez — veritabani degisirse prompt otomatik guncellenir.
-30+ tablolu gercek sistemlerde bu vazgecilmezdir.
-"""
 
 from sqlalchemy import create_engine, inspect
 
