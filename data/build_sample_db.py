@@ -1,13 +1,4 @@
-"""
-build_sample_db.py
-------------------
-Ilanin tarif ettigi alana benzer ornek bir analitik veritabani kurar:
-leads (musteri adaylari), appointments (randevular), revenue (gelir),
-marketing_spend (pazarlama harcamasi).
 
-SQLAlchemy kullaniyoruz ki ayni kod SQLite (demo) ve PostgreSQL (uretim)
-ile calissin — motor bagimsiz katman.
-"""
 
 import random
 from datetime import date, timedelta
