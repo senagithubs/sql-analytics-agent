@@ -1,11 +1,10 @@
 
 
-from sqlalchemy import create_engine, inspect
+from sqlalchemy import inspect
 
 
-def get_schema(db_url: str) -> dict[str, list[str]]:
+def get_schema(engine) -> dict[str, list[str]]:
     """{tablo_adi: [kolonlar]} sozlugu dondurur."""
-    engine = create_engine(db_url)
     insp = inspect(engine)
     return {
         table: [col["name"] for col in insp.get_columns(table)]

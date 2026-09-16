@@ -5,7 +5,6 @@ from datetime import date, timedelta
 
 from sqlalchemy import create_engine, text
 
-random.seed(42)  # tekrarlanabilir demo verisi
 
 SOURCES = ["google_ads", "facebook", "referral", "organic", "linkedin"]
 STATUSES = ["new", "contacted", "qualified", "converted", "lost"]
@@ -39,32 +38,33 @@ CREATE TABLE IF NOT EXISTS marketing_spend (
 
 
 def build(db_url: str = "sqlite:///data/analytics.db") -> None:
+    rng = random.Random(42)
     engine = create_engine(db_url)
     with engine.begin() as conn:
         for stmt in DDL.strip().split(";"):
             if stmt.strip():
                 conn.execute(text(stmt))
 
-        # 500 lead, son 6 aya yayilmis
-        start = date.today() - timedelta(days=180)
+        # 500 synthetic leads over a fixed six-month period
+        start = date(2025, 1, 1)
         lead_rows, appt_rows, rev_rows = [], [], []
         for i in range(1, 501):
-            created = start + timedelta(days=random.randint(0, 180))
-            source = random.choice(SOURCES)
-            status = random.choices(STATUSES, weights=[15, 25, 20, 25, 15])[0]
+            created = start + timedelta(days=rng.randint(0, 180))
+            source = rng.choice(SOURCES)
+            status = rng.choices(STATUSES, weights=[15, 25, 20, 25, 15])[0]
             lead_rows.append({"id": i, "c": created.isoformat(), "s": source, "st": status})
 
             if status in ("qualified", "converted"):
                 appt_rows.append({
                     "lid": i,
-                    "sched": (created + timedelta(days=random.randint(1, 14))).isoformat(),
-                    "show": 1 if random.random() > 0.25 else 0,
+                    "sched": (created + timedelta(days=rng.randint(1, 14))).isoformat(),
+                    "show": 1 if rng.random() > 0.25 else 0,
                 })
             if status == "converted":
                 rev_rows.append({
                     "lid": i,
-                    "amt": round(random.uniform(200, 3000), 2),
-                    "paid": (created + timedelta(days=random.randint(3, 30))).isoformat(),
+                    "amt": round(rng.uniform(200, 3000), 2),
+                    "paid": (created + timedelta(days=rng.randint(3, 30))).isoformat(),
                 })
 
         conn.execute(text("DELETE FROM leads")); conn.execute(text("DELETE FROM appointments"))
@@ -79,7 +79,7 @@ def build(db_url: str = "sqlite:///data/analytics.db") -> None:
             for m in range(6):
                 spend_rows.append({
                     "ch": ch,
-                    "amt": round(random.uniform(500, 5000), 2),
+                    "amt": round(rng.uniform(500, 5000), 2),
                     "d": (start + timedelta(days=30 * m)).isoformat(),
                 })
         conn.execute(text("INSERT INTO marketing_spend (channel, amount, spent_at) VALUES (:ch, :amt, :d)"), spend_rows)

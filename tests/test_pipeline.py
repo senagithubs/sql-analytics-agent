@@ -21,13 +21,13 @@ def teardown_module(module):
 
 
 def test_total_revenue_returns_positive_number():
-    agent = AnalyticsAgent(DB)
+    agent = AnalyticsAgent(DB, offline=True)
     out = agent.ask("What is the total revenue?")
     assert out["rows"][0][0] > 0
 
 
 def test_lead_source_breakdown_covers_all_sources():
-    agent = AnalyticsAgent(DB)
+    agent = AnalyticsAgent(DB, offline=True)
     out = agent.ask("Which source brought the most leads?")
     assert len(out["rows"]) == 5  # 5 kaynak tanimladik
     # En cok lead getiren kaynak ilk sirada olmali (DESC)
@@ -36,6 +36,6 @@ def test_lead_source_breakdown_covers_all_sources():
 
 
 def test_funnel_counts_sum_to_total_leads():
-    agent = AnalyticsAgent(DB)
+    agent = AnalyticsAgent(DB, offline=True)
     out = agent.ask("Where are we losing people in the funnel?")
     assert sum(row[1] for row in out["rows"]) == 500  # toplam lead sayisi
