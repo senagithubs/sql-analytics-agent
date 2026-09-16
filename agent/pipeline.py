@@ -4,10 +4,11 @@ import logging
 import os
 import re
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 
 from .guard import validate_sql, UnsafeSQLError
 from .schema import get_schema, schema_as_prompt
+from .readonly import readonly_engine, restrict_connection
 
 logger = logging.getLogger(__name__)
 
@@ -72,23 +73,38 @@ class LLMTranslator:
 
 
 class AnalyticsAgent:
-    def __init__(self, db_url: str = "sqlite:///data/analytics.db"):
-        self.db_url = db_url
-        self.engine = create_engine(db_url)
-        self.schema = get_schema(db_url)
-        self.schema_prompt = schema_as_prompt(self.schema)
-
-        api_key = os.environ.get("OPENAI_API_KEY")
+    def __init__(self, db_url: str = "sqlite:///data/analytics.db", *,
+                 allowed_tables=None, max_rows=1000, timeout_seconds=2, offline=False):
+        if not isinstance(max_rows, int) or isinstance(max_rows, bool) or max_rows < 1:
+            raise ValueError("max_rows must be a positive integer.")
+        if not 0 < timeout_seconds <= 30:
+            raise ValueError("timeout_seconds must be between 0 and 30.")
+        self.engine = readonly_engine(db_url)
+        schema = get_schema(self.engine)
+        if allowed_tables is not None:
+            if not set(allowed_tables) <= set(schema):
+                raise ValueError("The table allowlist contains an unknown table.")
+            schema = {t: cols for t, cols in schema.items() if t in allowed_tables}
+        self.schema = schema
+        self.schema_prompt = schema_as_prompt(schema)
+        self.max_rows = max_rows
+        self.timeout_seconds = timeout_seconds
+        api_key = None if offline else os.environ.get("OPENAI_API_KEY")
         self.translator = LLMTranslator(api_key) if api_key else RuleTranslator()
         self.mode = "llm" if api_key else "rule-based demo"
 
     def ask(self, question: str) -> dict:
-        """Soru sorar; {sql, rows, columns} dondurur. Hata halinde aciklayici mesaj."""
         raw_sql = self.translator.to_sql(question, self.schema_prompt)
-        safe_sql = validate_sql(raw_sql, allowed_tables=set(self.schema))
+        safe_sql = validate_sql(raw_sql, allowed_tables=set(self.schema), max_limit=self.max_rows)
         with self.engine.connect() as conn:
-            result = conn.execute(text(safe_sql))
-            columns = list(result.keys())
-            rows = [tuple(r) for r in result.fetchall()]
-        logger.info("Q: %s | SQL: %s | %d satir", question, safe_sql, len(rows))
+            dbapi_conn = conn.connection.driver_connection
+            restrict_connection(dbapi_conn, self.schema, self.timeout_seconds)
+            try:
+                result = conn.execute(text(safe_sql))
+                columns = list(result.keys())
+                rows = [tuple(r) for r in result.fetchmany(self.max_rows)]
+            finally:
+                dbapi_conn.set_authorizer(None)
+                dbapi_conn.set_progress_handler(None, 0)
+        logger.info("Executed validated query; %d rows", len(rows))
         return {"sql": safe_sql, "columns": columns, "rows": rows}

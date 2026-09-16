@@ -1,5 +1,6 @@
 
 
+import argparse
 import logging
 
 from agent import AnalyticsAgent
@@ -16,7 +17,10 @@ DEMO_QUESTIONS = [
 
 
 def main():
-    agent = AnalyticsAgent()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--offline", action="store_true", help="Never call a paid API")
+    args = parser.parse_args()
+    agent = AnalyticsAgent(offline=args.offline)
     print(f"Analytics agent hazir ({agent.mode} modunda). Ornek sorular calisiyor:\n")
     for q in DEMO_QUESTIONS:
         try:

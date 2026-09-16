@@ -43,3 +43,42 @@ def test_join_with_allowed_tables_passes():
     sql = ("SELECT l.source, SUM(r.amount) FROM revenue r "
            "JOIN leads l ON l.id = r.lead_id GROUP BY l.source")
     assert validate_sql(sql, TABLES)
+
+
+@pytest.mark.parametrize('sql', [
+    'SELECT * FROM "secrets"',
+    'SELECT * FROM leads, secrets',
+    'WITH x AS (SELECT * FROM secrets) SELECT * FROM x',
+    'SELECT * FROM leads WHERE id IN (SELECT id FROM secrets)',
+    'SELECT * FROM main.leads',
+    'SELECT * FROM pragma_table_info("leads")',
+    'SELECT load_extension("anything")',
+    'SELECT randomblob(100000000)',
+    'SELECT * FROM leads LIMIT -1',
+    'SELECT * FROM leads LIMIT (SELECT 2)',
+    'WITH RECURSIVE x(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM x) SELECT * FROM x',
+    'SELECT * INTO backup FROM leads',
+    'SELECT * FROM leads; SELECT * FROM revenue',
+])
+def test_unsafe_queries_rejected(sql):
+    with pytest.raises(UnsafeSQLError):
+        validate_sql(sql, TABLES)
+
+
+@pytest.mark.parametrize('sql', [
+    'SELECT * FROM leads LIMIT 100000',
+    'SELECT * FROM (SELECT * FROM leads LIMIT 1) AS a CROSS JOIN leads',
+    'SELECT id FROM leads UNION ALL SELECT id FROM leads',
+])
+def test_limit_applies_to_outer_query(sql):
+    from sqlglot import parse_one
+    query = parse_one(validate_sql(sql, TABLES, max_limit=10), read='sqlite')
+    assert int(query.args['limit'].expression.this) == 10
+
+
+def test_cte_and_quoted_allowed_table():
+    assert validate_sql('WITH x AS (SELECT * FROM "leads") SELECT * FROM x', TABLES)
+
+
+def test_keywords_and_semicolon_inside_string_are_data():
+    assert validate_sql("SELECT 'delete; drop' AS label FROM leads", TABLES)
