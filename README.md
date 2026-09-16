@@ -16,7 +16,7 @@ python -m pytest -q
 
 `demo.py` creates a temporary database, shows two answers, rejects a hidden table,
 and caps an oversized query. It never uses an API key and leaves no database behind.
-See [the two-minute talk track and exercises](docs/demo-and-learning.md).
+See the [offline demonstration walkthrough](docs/demo.md).
 
 To explore the five sample questions:
 
